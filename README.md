@@ -6,6 +6,7 @@ timer start projectName
 timer stop projectName
 timer abort projectName
 timer count projectName
+timer list
 ```
 
 

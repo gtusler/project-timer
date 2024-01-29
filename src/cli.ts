@@ -13,13 +13,15 @@ Usage:
     ${chalk.green('timer')} ${chalk.yellow('start')} projectName
     ${chalk.green('timer')} ${chalk.yellow('stop')} projectName
     ${chalk.green('timer')} ${chalk.yellow('abort')} projectName
+
+    ${chalk.green('timer')} ${chalk.yellow('list')}
     ${chalk.green('timer')} ${chalk.yellow('count')} projectName
 
 Pass -h or --help as the first arg to display this text.
 `;
 
 
-const validCommands = ['start', 'stop', 'abort', 'count'];
+const validCommands = ['start', 'stop', 'abort', 'count', 'list'];
 const command = Bun.argv[2];
 
 if (command === undefined
@@ -30,9 +32,17 @@ if (command === undefined
     process.exit(0);
 }
 
+const dbPath = import.meta.dirname + '/../db/stuff.db';
+const db = new DbController(dbPath);
+db.open();
+
+if (command === 'list') {
+    listProjects();
+    process.exit(0);
+}
+
 
 const projectName = Bun.argv[3];
-
 if (projectName === undefined || projectName === '') {
     console.log(chalk.red('projectName must be a valid string'), '\n');
     console.log(helptext);
@@ -41,25 +51,16 @@ if (projectName === undefined || projectName === '') {
 
 const now = new Date();
 
-const dbPath = import.meta.dirname + '/../db/stuff.db';
-const db = new DbController(dbPath);
-db.open();
-
-
 if (! db.projectExists(projectName)) {
     if (command === 'start') {
         console.log('Adding a new project:', chalk.green(projectName));
         db.addProject(projectName);
     } else {
-        const allProjects = db.getProjects();
         console.log(`${chalk.red(`Timer ${projectName} doesn't exist.`)}
 Run this to make a new timer:
     ${chalk.green('timer')} ${chalk.yellow('start')} ${projectName}
 `);
-        console.log('There are', allProjects.length, 'projects:');
-        for (const { name } of allProjects) {
-            console.log(`    ${chalk.green(name)}`);
-        }
+        listProjects();
         process.exit(1);
     }
 }
@@ -122,5 +123,13 @@ if (command === 'count') {
 
     console.log('Sessions:', grouped.length);
     console.log('Total:', chalk.yellow(prettyMilliseconds(total)));
+}
+
+function listProjects(): void {
+    const allProjects = db.getProjects();
+    console.log('There are', allProjects.length, 'projects:');
+    for (const { name } of allProjects) {
+        console.log(`    ${chalk.green(name)}`);
+    }
 }
 
